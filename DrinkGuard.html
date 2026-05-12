@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>DrinkGuard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+  :root {
+    --green: #1D9E75;
+    --green-light: #E1F5EE;
+    --green-dark: #0F6E56;
+    --amber: #BA7517;
+    --amber-light: #FAEEDA;
+    --red: #E24B4A;
+    --red-light: #FCEBEB;
+    --bg: #F5F5F3;
+    --card: #FFFFFF;
+    --text: #1a1a1a;
+    --text-sub: #666;
+    --text-hint: #999;
+    --border: rgba(0,0,0,0.1);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --kakao: #FEE500;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  .topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 12px;
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .topbar .dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
+  .topbar .dot.active { background: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.2); }
+
+  .page { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    border: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-sub);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  /* Session */
+  .session-row { display: flex; gap: 8px; }
+  .btn-session {
+    flex: 1; padding: 13px 10px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px; font-weight: 500;
+    color: var(--text);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-session.start { border-color: var(--green); color: var(--green); }
+  .btn-session.start:active { background: var(--green-light); }
+  .btn-session.stop { border-color: var(--red); color: var(--red); }
+  .btn-session.stop:active { background: var(--red-light); }
+  .btn-session:disabled { opacity: 0.4; }
+
+  .session-elapsed {
+    margin-top: 10px;
+    font-size: 13px; color: var(--text-sub);
+    text-align: center; display: none;
+  }
+
+  /* Drinks grid */
+  .drinks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .drink-tile {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    border: 1px solid var(--border);
+  }
+  .drink-emoji { font-size: 26px; }
+  .drink-label { font-size: 13px; font-weight: 500; }
+  .drink-ratio { font-size: 11px; color: var(--text-hint); }
+  .counter-row { display: flex; align-items: center; gap: 10px; }
+  .btn-cnt {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    font-size: 22px; line-height: 1;
+    color: var(--text);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.1s;
+  }
+  .btn-cnt:active { transform: scale(0.9); background: var(--bg); }
+  .drink-cnt { font-size: 22px; font-weight: 700; min-width: 28px; text-align: center; }
+
+  /* Progress */
+  .progress-section { }
+  .progress-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .progress-equiv { font-size: 14px; font-weight: 500; }
+  .badge {
+    font-size: 12px; font-weight: 500;
+    padding: 4px 10px; border-radius: 20px;
+    background: var(--green-light); color: var(--green-dark);
+  }
+  .badge.warn { background: var(--amber-light); color: var(--amber); }
+  .badge.danger { background: var(--red-light); color: var(--red); }
+  .progress-track {
+    height: 12px; border-radius: 100px;
+    background: var(--bg); overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-fill {
+    height: 100%; border-radius: 100px;
+    background: var(--green);
+    transition: width 0.4s cubic-bezier(.4,0,.2,1), background 0.4s;
+    width: 0%;
+  }
+  .progress-limit { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-hint); margin-top: 5px; }
+
+  /* Alert */
+  .alert {
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 13px; font-weight: 500;
+    display: none;
+    margin-top: 10px;
+  }
+  .alert.warn { background: var(--amber-light); color: var(--amber); }
+  .alert.danger { background: var(--red-light); color: var(--red); }
+  .alert.success { background: var(--green-light); color: var(--green-dark); }
+
+  /* Buttons */
+  .btn-main {
+    width: 100%; padding: 15px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-home {
+    background: var(--green);
+    color: white;
+  }
+  .btn-home:active { background: var(--green-dark); transform: scale(0.98); }
+  .btn-home:disabled { background: #ccc; }
+
+  .btn-kakao {
+    background: var(--kakao);
+    color: #3A1D1D;
+    display: none;
+  }
+  .btn-kakao:active { background: #EDD800; transform: scale(0.98); }
+
+  .btn-maps {
+    background: #4285F4;
+    color: white;
+    display: none;
+  }
+  .btn-maps:active { background: #2563EB; transform: scale(0.98); }
+
+  .btn-arrive {
+    background: var(--green);
+    color: white;
+    display: none;
+  }
+  .btn-arrive:active { background: var(--green-dark); transform: scale(0.98); }
+
+  .location-status {
+    display: none;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-top: 10px;
+  }
+  .location-status .ls-title { font-size: 13px; font-weight: 700; color: #1D4ED8; margin-bottom: 6px; }
+  .location-status .ls-timer { font-size: 22px; font-weight: 700; color: #1D4ED8; font-variant-numeric: tabular-nums; }
+  .location-status .ls-sub { font-size: 11px; color: #3B82F6; margin-top: 2px; }
+  .pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3B82F6; margin-right: 6px; animation: pulse 1.5s infinite; vertical-align: middle; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+  .step-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--green); color: white;
+    font-size: 11px; font-weight: 700; margin-right: 6px; flex-shrink: 0;
+  }
+  .step-row { display: flex; align-items: center; font-size: 13px; color: var(--text-sub); margin-bottom: 6px; }
+
+  .hint { font-size: 11px; color: var(--text-hint); text-align: center; margin-top: 6px; line-height: 1.5; }
+
+  /* Reset */
+  .btn-reset {
+    background: none; border: none;
+    font-size: 12px; color: var(--text-hint);
+    cursor: pointer; width: 100%; text-align: center;
+    padding: 8px; font-family: 'Noto Sans KR', sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🛡️ DrinkGuard</h1>
+  <div class="dot" id="session-dot"></div>
+</div>
+
+<div class="page">
+
+  <!-- 세션 -->
+  <div class="card">
+    <div class="card-title">⏱ 음주 세션</div>
+    <div class="session-row">
+      <button class="btn-session start" id="btn-start" onclick="startSession()">▶ 음주 시작</button>
+      <button class="btn-session stop" id="btn-stop" onclick="stopSession()" disabled>■ 세션 종료</button>
+    </div>
+    <div class="session-elapsed" id="elapsed">음주 시작 후 0분 0초 경과</div>
+  </div>
+
+  <!-- 잔 카운트 -->
+  <div class="card">
+    <div class="card-title">🍶 잔 수 카운트</div>
+    <div class="drinks-grid">
+      <div class="drink-tile">
+        <div class="drink-emoji">🍶</div>
+        <div class="drink-label">소주</div>
+        <div class="drink-ratio">1잔 = 1.0배</div>
+        <div class="counter-row">
+          <button class="btn-cnt" onclick="update('soju',-1)">−</button>
+          <div class="drink-cnt" id="c-soju">0</div>
+          <button class="btn-cnt" onclick="update('soju',1)">+</button>
+        </div>
+      </div>
+      <div class="drink-tile">
+        <div class="drink-emoji">🍺</div>
+        <div class="drink-label">맥주</div>
+        <div class="drink-ratio">1잔 = 0.3배</div>
+        <div class="counter-row">
+          <button class="btn-cnt" onclick="update('beer',-1)">−</button>
+          <div class="drink-cnt" id="c-beer">0</div>
+          <button class="btn-cnt" onclick="update('beer',1)">+</button>
+        </div>
+      </div>
+      <div class="drink-tile">
+        <div class="drink-emoji">🍻</div>
+        <div class="drink-label">소맥</div>
+        <div class="drink-ratio">1잔 = 0.5배</div>
+        <div class="counter-row">
+          <button class="btn-cnt" onclick="update('somac',-1)">−</button>
+          <div class="drink-cnt" id="c-somac">0</div>
+          <button class="btn-cnt" onclick="update('somac',1)">+</button>
+        </div>
+      </div>
+      <div class="drink-tile">
+        <div class="drink-emoji">🥃</div>
+        <div class="drink-label">양주</div>
+        <div class="drink-ratio">1잔 = 1.2배</div>
+        <div class="counter-row">
+          <button class="btn-cnt" onclick="update('whisky',-1)">−</button>
+          <div class="drink-cnt" id="c-whisky">0</div>
+          <button class="btn-cnt" onclick="update('whisky',1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <div class="progress-info">
+        <span class="progress-equiv">소주 환산 <strong id="equiv">0.0</strong>잔 / 한도 10잔</span>
+        <span class="badge" id="badge">안전</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="fill"></div>
+      </div>
+      <div class="progress-limit"><span>0잔</span><span>7잔 (경고)</span><span>10잔 (한도)</span></div>
+
+      <div class="alert warn" id="alert-warn">⚠️ 한도의 70%를 넘었어요. 슬슬 조절하세요!</div>
+      <div class="alert danger" id="alert-limit">🚨 한도(소주 10잔)를 초과했어요! 이제 그만 마세요.</div>
+    </div>
+  </div>
+
+  <!-- 귀가 -->
+  <div class="card">
+    <div class="card-title">🚶 귀가 안전 관리</div>
+
+    <!-- 단계 안내 (시작 전) -->
+    <div id="guide-steps" style="margin-bottom:14px;">
+      <div class="step-row"><span class="step-badge">1</span>귀가 시작 버튼 → 위치 권한 허용</div>
+      <div class="step-row"><span class="step-badge">2</span>구글지도에서 2시간 위치공유 링크 생성</div>
+      <div class="step-row"><span class="step-badge">3</span>카카오톡으로 배우자에게 링크 전송</div>
+    </div>
+
+    <button class="btn-main btn-home" id="btn-go-home" onclick="startCommute()" style="background:var(--green);color:white;">
+      🚶 귀가 시작
+    </button>
+
+    <!-- 위치 공유 중 상태 -->
+    <div class="location-status" id="loc-status">
+      <div class="ls-title"><span class="pulse"></span>위치 공유 준비 완료</div>
+      <div class="ls-timer" id="share-timer">2:00:00 남음</div>
+      <div class="ls-sub">구글지도 링크를 배우자에게 전송하세요</div>
+    </div>
+
+    <button class="btn-main btn-maps" id="btn-maps" onclick="openMapsShare()" style="margin-top:10px;">
+      🗺️ 구글지도 위치공유 열기
+    </button>
+    <button class="btn-main btn-kakao" id="btn-kakao" onclick="sendKakaoWithLocation()" style="margin-top:8px;">
+      💬 카카오톡으로 링크 전송
+    </button>
+
+    <!-- 도착 완료 -->
+    <div class="alert success" id="alert-arrived" style="margin-top:10px;">✅ 귀가 완료! 수고했어요 🏠</div>
+    <button class="btn-main btn-arrive" id="btn-arrived" onclick="markArrived()" style="margin-top:10px;">
+      🏠 집에 도착 완료
+    </button>
+
+    <p class="hint" id="hint-main">귀가 시작을 누르면 GPS 위치를 가져와요</p>
+  </div>
+
+  <button class="btn-reset" onclick="resetAll()">🔄 전체 초기화</button>
+
+</div>
+
+<script>
+const RATIO = { soju:1.0, beer:0.3, somac:0.5, whisky:1.2 };
+const LIMIT = 10;
+const counts = { soju:0, beer:0, somac:0, whisky:0 };
+let sessionOn = false, sessionStart = null, timerID = null;
+
+function update(type, d) {
+  counts[type] = Math.max(0, counts[type] + d);
+  document.getElementById('c-' + type).textContent = counts[type];
+  render();
+}
+
+function getEquiv() {
+  return Object.keys(counts).reduce((s,k) => s + counts[k]*RATIO[k], 0);
+}
+
+function render() {
+  const eq = getEquiv();
+  const pct = Math.min(100, (eq / LIMIT) * 100);
+  document.getElementById('equiv').textContent = eq.toFixed(1);
+  document.getElementById('fill').style.width = pct + '%';
+
+  const badge = document.getElementById('badge');
+  const fill = document.getElementById('fill');
+  const warn = document.getElementById('alert-warn');
+  const limit = document.getElementById('alert-limit');
+
+  warn.style.display = 'none';
+  limit.style.display = 'none';
+
+  if (eq >= LIMIT) {
+    fill.style.background = '#E24B4A';
+    badge.className = 'badge danger';
+    badge.textContent = '한도 초과';
+    limit.style.display = 'block';
+  } else if (eq >= LIMIT * 0.7) {
+    fill.style.background = '#BA7517';
+    badge.className = 'badge warn';
+    badge.textContent = '주의';
+    warn.style.display = 'block';
+  } else {
+    fill.style.background = '#1D9E75';
+    badge.className = 'badge';
+    badge.textContent = '안전';
+  }
+}
+
+function startSession() {
+  sessionOn = true;
+  sessionStart = Date.now();
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-stop').disabled = false;
+  document.getElementById('session-dot').classList.add('active');
+  const el = document.getElementById('elapsed');
+  el.style.display = 'block';
+  timerID = setInterval(() => {
+    const s = Math.floor((Date.now() - sessionStart) / 1000);
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    el.textContent = (h ? h+'시간 ' : '') + m+'분 '+sec+'초 경과';
+  }, 1000);
+}
+
+function stopSession() {
+  clearInterval(timerID);
+  sessionOn = false;
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  document.getElementById('session-dot').classList.remove('active');
+  document.getElementById('elapsed').textContent = '세션 종료됨';
+}
+
+let commuteTimer = null;
+let commuteRemain = 2 * 60 * 60; // 2시간(초)
+let currentLat = null, currentLng = null;
+let mapsShareUrl = null;
+
+function startCommute() {
+  if (!navigator.geolocation) {
+    alert('이 브라우저는 위치 정보를 지원하지 않아요.');
+    return;
+  }
+  document.getElementById('btn-go-home').textContent = '📍 위치 가져오는 중...';
+  document.getElementById('btn-go-home').disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      currentLat = pos.coords.latitude.toFixed(6);
+      currentLng = pos.coords.longitude.toFixed(6);
+      onLocationReady();
+    },
+    (err) => {
+      document.getElementById('btn-go-home').disabled = false;
+      document.getElementById('btn-go-home').textContent = '🚶 귀가 시작';
+      alert('위치 권한을 허용해주세요!\n설정 > 크롬 > 위치 권한 허용');
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+function onLocationReady() {
+  // 구글지도 실시간 위치공유 딥링크 (내 위치 기준으로 공유 화면 오픈)
+  mapsShareUrl = 'https://maps.google.com/maps?q=' + currentLat + ',' + currentLng + '&z=16';
+
+  document.getElementById('guide-steps').style.display = 'none';
+  document.getElementById('btn-go-home').style.display = 'none';
+  document.getElementById('loc-status').style.display = 'block';
+  document.getElementById('btn-maps').style.display = 'flex';
+  document.getElementById('btn-kakao').style.display = 'flex';
+  document.getElementById('btn-arrived').style.display = 'flex';
+  document.getElementById('hint-main').style.display = 'none';
+
+  // 카운트다운 타이머
+  commuteRemain = 2 * 60 * 60;
+  commuteTimer = setInterval(() => {
+    commuteRemain--;
+    const h = Math.floor(commuteRemain / 3600);
+    const m = Math.floor((commuteRemain % 3600) / 60);
+    const s = commuteRemain % 60;
+    document.getElementById('share-timer').textContent =
+      h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0') + ' 남음';
+    if (commuteRemain <= 0) {
+      clearInterval(commuteTimer);
+      document.getElementById('share-timer').textContent = '공유 시간 만료';
+    }
+  }, 1000);
+}
+
+function openMapsShare() {
+  // 구글지도 앱에서 실시간 위치공유 화면 직접 오픈
+  const appUrl = 'comgooglemaps://?center=' + currentLat + ',' + currentLng + '&zoom=15';
+  const webUrl = 'https://www.google.com/maps/search/?api=1&query=' + currentLat + ',' + currentLng;
+  window.location.href = appUrl;
+  setTimeout(() => { window.open(webUrl, '_blank'); }, 800);
+}
+
+function sendKakaoWithLocation() {
+  const now = new Date();
+  const t = now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분';
+  const eq = getEquiv().toFixed(1);
+  const mapLink = 'https://www.google.com/maps/search/?api=1&query=' + currentLat + ',' + currentLng;
+  const msg = '🚶 나 지금 ' + t + ' 귀가 중이야!\n\n📍 현재 위치 (구글지도):\n' + mapLink + '\n\n🍶 오늘 음주량: 소주 환산 ' + eq + '잔\n2시간 안에 도착할게, 걱정하지 마 😊';
+  const enc = encodeURIComponent(msg);
+  window.location.href = 'kakaolink://send?text=' + enc;
+  setTimeout(() => {
+    window.open('https://sharer.kakao.com/talk/friends/picker/link?text=' + enc, '_blank');
+  }, 600);
+}
+
+function markArrived() {
+  clearInterval(commuteTimer);
+  document.getElementById('btn-arrived').style.display = 'none';
+  document.getElementById('btn-maps').style.display = 'none';
+  document.getElementById('btn-kakao').style.display = 'none';
+  document.getElementById('loc-status').style.display = 'none';
+  document.getElementById('alert-arrived').style.display = 'block';
+
+  // 도착 카톡 전송
+  const now = new Date();
+  const t = now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분';
+  const eq = getEquiv().toFixed(1);
+  const msg = '🏠 나 ' + t + '에 집에 안전하게 도착했어!\n오늘 음주량: 소주 환산 ' + eq + '잔\n걱정해줘서 고마워 😊';
+  const enc = encodeURIComponent(msg);
+  setTimeout(() => {
+    window.location.href = 'kakaolink://send?text=' + enc;
+    setTimeout(() => {
+      window.open('https://sharer.kakao.com/talk/friends/picker/link?text=' + enc, '_blank');
+    }, 600);
+  }, 300);
+}
+
+function resetAll() {
+  if (!confirm('전체 초기화할까요?')) return;
+  Object.keys(counts).forEach(k => {
+    counts[k] = 0;
+    document.getElementById('c-' + k).textContent = 0;
+  });
+  stopSession();
+  document.getElementById('elapsed').style.display = 'none';
+  clearInterval(commuteTimer);
+  commuteRemain = 2 * 60 * 60;
+  currentLat = null; currentLng = null; mapsShareUrl = null;
+  document.getElementById('guide-steps').style.display = 'block';
+  document.getElementById('btn-go-home').style.display = 'flex';
+  document.getElementById('btn-go-home').disabled = false;
+  document.getElementById('btn-go-home').textContent = '🚶 귀가 시작';
+  document.getElementById('loc-status').style.display = 'none';
+  document.getElementById('btn-maps').style.display = 'none';
+  document.getElementById('btn-kakao').style.display = 'none';
+  document.getElementById('btn-arrived').style.display = 'none';
+  document.getElementById('alert-arrived').style.display = 'none';
+  document.getElementById('hint-main').style.display = 'block';
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
