@@ -307,39 +307,17 @@
   <div class="card">
     <div class="card-title">🚶 귀가 안전 관리</div>
 
-    <!-- 단계 안내 (시작 전) -->
-    <div id="guide-steps" style="margin-bottom:14px;">
-      <div class="step-row"><span class="step-badge">1</span>귀가 시작 버튼 → 위치 권한 허용</div>
-      <div class="step-row"><span class="step-badge">2</span>구글지도에서 2시간 위치공유 링크 생성</div>
-      <div class="step-row"><span class="step-badge">3</span>카카오톡으로 배우자에게 링크 전송</div>
-    </div>
-
-    <button class="btn-main btn-home" id="btn-go-home" onclick="startCommute()" style="background:var(--green);color:white;">
+    <button class="btn-main btn-home" id="btn-go-home" onclick="startCommute()" style="background:var(--green);color:white;margin-bottom:10px;">
       🚶 귀가 시작
     </button>
 
-    <!-- 위치 공유 중 상태 -->
-    <div class="location-status" id="loc-status">
-      <div class="ls-title"><span class="pulse"></span>위치 공유 준비 완료</div>
-      <div class="ls-timer" id="share-timer">2:00:00 남음</div>
-      <div class="ls-sub">구글지도 링크를 배우자에게 전송하세요</div>
-    </div>
-
-    <button class="btn-main btn-maps" id="btn-maps" onclick="openMapsShare()" style="margin-top:10px;">
-      🗺️ 구글지도 위치공유 열기
-    </button>
-    <button class="btn-main btn-kakao" id="btn-kakao" onclick="sendSmsWithLocation()" style="margin-top:8px;">
-      📱 문자로 위치 전송
-    </button>
-
-    <!-- 도착 완료 -->
-    <div class="alert success" id="alert-arrived" style="margin-top:10px;">✅ 귀가 완료! 수고했어요 🏠</div>
-    <button class="btn-main btn-arrive" id="btn-arrived" onclick="markArrived()" style="margin-top:10px;">
+    <div class="alert success" id="alert-arrived" style="margin-bottom:10px;display:none;">✅ 귀가 완료! 수고했어요 🏠</div>
+    <button class="btn-main btn-arrive" id="btn-arrived" onclick="markArrived()" style="display:none;">
       🏠 집에 도착 완료
     </button>
 
-    <p class="hint" id="hint-main">귀가 시작을 누르면 GPS 위치를 가져와요</p>
-    <p class="hint" style="margin-top:4px;">📌 번호 변경: 파일을 메모장으로 열고<br><strong>010-0000-0000</strong> 부분을 수정하세요</p>
+    <p class="hint">귀가 시작 → 구글지도 자동 오픈 → 위치공유 직접 설정<br>집 도착하면 도착 완료 버튼 눌러주세요</p>
+    <p class="hint" style="margin-top:4px;">📌 번호 변경: GitHub에서 <strong>010-0000-0000</strong> 수정</p>
   </div>
 
   <button class="btn-reset" onclick="resetAll()">🔄 전체 초기화</button>
@@ -418,70 +396,25 @@ function stopSession() {
 }
 
 let commuteTimer = null;
-let commuteRemain = 2 * 60 * 60; // 2시간(초)
+let commuteRemain = 2 * 60 * 60;
 let currentLat = null, currentLng = null;
 let mapsShareUrl = null;
 
 function startCommute() {
-  if (!navigator.geolocation) {
-    alert('이 브라우저는 위치 정보를 지원하지 않아요.');
-    return;
-  }
-  document.getElementById('btn-go-home').textContent = '📍 위치 가져오는 중...';
-  document.getElementById('btn-go-home').disabled = true;
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      currentLat = pos.coords.latitude.toFixed(6);
-      currentLng = pos.coords.longitude.toFixed(6);
-      onLocationReady();
-    },
-    (err) => {
-      document.getElementById('btn-go-home').disabled = false;
-      document.getElementById('btn-go-home').textContent = '🚶 귀가 시작';
-      alert('위치 권한을 허용해주세요!\n설정 > 크롬 > 위치 권한 허용');
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-}
-
-function onLocationReady() {
-  // 구글지도 실시간 위치공유 딥링크 (내 위치 기준으로 공유 화면 오픈)
-  mapsShareUrl = 'https://maps.google.com/maps?q=' + currentLat + ',' + currentLng + '&z=16';
-
-  document.getElementById('guide-steps').style.display = 'none';
-  document.getElementById('btn-go-home').style.display = 'none';
-  document.getElementById('loc-status').style.display = 'block';
-  document.getElementById('btn-maps').style.display = 'flex';
-  document.getElementById('btn-kakao').style.display = 'flex';
-  document.getElementById('btn-arrived').style.display = 'flex';
-  document.getElementById('hint-main').style.display = 'none';
-
-  // 카운트다운 타이머
-  commuteRemain = 2 * 60 * 60;
-  commuteTimer = setInterval(() => {
-    commuteRemain--;
-    const h = Math.floor(commuteRemain / 3600);
-    const m = Math.floor((commuteRemain % 3600) / 60);
-    const s = commuteRemain % 60;
-    document.getElementById('share-timer').textContent =
-      h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0') + ' 남음';
-    if (commuteRemain <= 0) {
-      clearInterval(commuteTimer);
-      document.getElementById('share-timer').textContent = '공유 시간 만료';
-    }
-  }, 1000);
-}
-
-function openMapsShare() {
-  // 구글지도 앱에서 실시간 위치공유 화면 직접 오픈
-  const appUrl = 'comgooglemaps://?center=' + currentLat + ',' + currentLng + '&zoom=15';
-  const webUrl = 'https://www.google.com/maps/search/?api=1&query=' + currentLat + ',' + currentLng;
-  window.location.href = appUrl;
+  // 구글지도 앱 열기 (앱 우선, 없으면 웹)
+  const appUrl = 'comgooglemaps://';
+  const webUrl = 'https://maps.google.com';
+  const a = document.createElement('a');
+  a.href = appUrl;
+  a.click();
   setTimeout(() => { window.open(webUrl, '_blank'); }, 800);
+
+  // 귀가 시작 버튼 숨기고 도착 완료 버튼 표시
+  document.getElementById('btn-go-home').style.display = 'none';
+  document.getElementById('btn-arrived').style.display = 'flex';
 }
 
-const PARTNER_PHONE = '010-5882-5509'; // ← 여기에 배우자 번호 입력
+const PARTNER_PHONE = '010-0000-0000'; // ← 여기에 배우자 번호 입력
 
 function sendSmsWithLocation() {
   const now = new Date();
@@ -494,11 +427,7 @@ function sendSmsWithLocation() {
 }
 
 function markArrived() {
-  clearInterval(commuteTimer);
   document.getElementById('btn-arrived').style.display = 'none';
-  document.getElementById('btn-maps').style.display = 'none';
-  document.getElementById('btn-kakao').style.display = 'none';
-  document.getElementById('loc-status').style.display = 'none';
   document.getElementById('alert-arrived').style.display = 'block';
 
   const now = new Date();
@@ -520,18 +449,12 @@ function resetAll() {
   stopSession();
   document.getElementById('elapsed').style.display = 'none';
   clearInterval(commuteTimer);
-  commuteRemain = 2 * 60 * 60;
   currentLat = null; currentLng = null; mapsShareUrl = null;
-  document.getElementById('guide-steps').style.display = 'block';
   document.getElementById('btn-go-home').style.display = 'flex';
   document.getElementById('btn-go-home').disabled = false;
   document.getElementById('btn-go-home').textContent = '🚶 귀가 시작';
-  document.getElementById('loc-status').style.display = 'none';
-  document.getElementById('btn-maps').style.display = 'none';
-  document.getElementById('btn-kakao').style.display = 'none';
   document.getElementById('btn-arrived').style.display = 'none';
   document.getElementById('alert-arrived').style.display = 'none';
-  document.getElementById('hint-main').style.display = 'block';
   render();
 }
 
