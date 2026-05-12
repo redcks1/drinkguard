@@ -328,8 +328,8 @@
     <button class="btn-main btn-maps" id="btn-maps" onclick="openMapsShare()" style="margin-top:10px;">
       🗺️ 구글지도 위치공유 열기
     </button>
-    <button class="btn-main btn-kakao" id="btn-kakao" onclick="sendKakaoWithLocation()" style="margin-top:8px;">
-      💬 카카오톡으로 링크 전송
+    <button class="btn-main btn-kakao" id="btn-kakao" onclick="sendSmsWithLocation()" style="margin-top:8px;">
+      📱 문자로 위치 전송
     </button>
 
     <!-- 도착 완료 -->
@@ -339,6 +339,7 @@
     </button>
 
     <p class="hint" id="hint-main">귀가 시작을 누르면 GPS 위치를 가져와요</p>
+    <p class="hint" style="margin-top:4px;">📌 번호 변경: 파일을 메모장으로 열고<br><strong>010-0000-0000</strong> 부분을 수정하세요</p>
   </div>
 
   <button class="btn-reset" onclick="resetAll()">🔄 전체 초기화</button>
@@ -480,17 +481,16 @@ function openMapsShare() {
   setTimeout(() => { window.open(webUrl, '_blank'); }, 800);
 }
 
-function sendKakaoWithLocation() {
+const PARTNER_PHONE = '010-0000-0000'; // ← 여기에 배우자 번호 입력
+
+function sendSmsWithLocation() {
   const now = new Date();
   const t = now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분';
   const eq = getEquiv().toFixed(1);
   const mapLink = 'https://www.google.com/maps/search/?api=1&query=' + currentLat + ',' + currentLng;
-  const msg = '🚶 나 지금 ' + t + ' 귀가 중이야!\n\n📍 현재 위치 (구글지도):\n' + mapLink + '\n\n🍶 오늘 음주량: 소주 환산 ' + eq + '잔\n2시간 안에 도착할게, 걱정하지 마 😊';
-  const enc = encodeURIComponent(msg);
-  window.location.href = 'kakaolink://send?text=' + enc;
-  setTimeout(() => {
-    window.open('https://sharer.kakao.com/talk/friends/picker/link?text=' + enc, '_blank');
-  }, 600);
+  const msg = '🚶 나 지금 ' + t + ' 귀가 중이야!\n\n📍 현재 위치:\n' + mapLink + '\n\n🍶 오늘 음주량: 소주 환산 ' + eq + '잔\n2시간 안에 도착할게, 걱정하지 마 😊';
+  const phone = PARTNER_PHONE.replace(/-/g, '');
+  window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
 }
 
 function markArrived() {
@@ -501,17 +501,13 @@ function markArrived() {
   document.getElementById('loc-status').style.display = 'none';
   document.getElementById('alert-arrived').style.display = 'block';
 
-  // 도착 카톡 전송
   const now = new Date();
   const t = now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분';
   const eq = getEquiv().toFixed(1);
   const msg = '🏠 나 ' + t + '에 집에 안전하게 도착했어!\n오늘 음주량: 소주 환산 ' + eq + '잔\n걱정해줘서 고마워 😊';
-  const enc = encodeURIComponent(msg);
+  const phone = PARTNER_PHONE.replace(/-/g, '');
   setTimeout(() => {
-    window.location.href = 'kakaolink://send?text=' + enc;
-    setTimeout(() => {
-      window.open('https://sharer.kakao.com/talk/friends/picker/link?text=' + enc, '_blank');
-    }, 600);
+    window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
   }, 300);
 }
 
