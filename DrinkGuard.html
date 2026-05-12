@@ -307,6 +307,18 @@
   <div class="card">
     <div class="card-title">🚶 귀가 안전 관리</div>
 
+    <!-- 전화번호 입력 -->
+    <div id="phone-setup" style="margin-bottom:12px;">
+      <div style="font-size:13px;color:var(--text-sub);margin-bottom:6px;">📱 배우자 전화번호</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="phone-input" type="tel" placeholder="010-0000-0000"
+          style="flex:1;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;"
+          oninput="formatPhone(this)" onchange="savePhone()">
+        <span id="phone-saved" style="font-size:12px;color:var(--green);display:none;">✓ 저장됨</span>
+      </div>
+      <p class="hint" style="margin-top:5px;text-align:left;">번호는 이 기기에만 저장돼요. GitHub에 올라가지 않아요 🔒</p>
+    </div>
+
     <button class="btn-main btn-home" id="btn-go-home" onclick="startCommute()" style="background:var(--green);color:white;margin-bottom:10px;">
       🚶 귀가 시작
     </button>
@@ -317,7 +329,6 @@
     </button>
 
     <p class="hint">귀가 시작 → 구글지도 자동 오픈 → 위치공유 직접 설정<br>집 도착하면 도착 완료 버튼 눌러주세요</p>
-    <p class="hint" style="margin-top:4px;">📌 번호 변경: GitHub에서 <strong>010-0000-0000</strong> 수정</p>
   </div>
 
   <button class="btn-reset" onclick="resetAll()">🔄 전체 초기화</button>
@@ -414,7 +425,33 @@ function startCommute() {
   document.getElementById('btn-arrived').style.display = 'flex';
 }
 
-const PARTNER_PHONE = '010-2015-6406'; // ← 여기에 배우자 번호 입력
+function getPhone() {
+  return localStorage.getItem('drinkguard_phone') || '';
+}
+
+function savePhone() {
+  const val = document.getElementById('phone-input').value;
+  localStorage.setItem('drinkguard_phone', val);
+  const saved = document.getElementById('phone-saved');
+  saved.style.display = 'inline';
+  setTimeout(() => { saved.style.display = 'none'; }, 2000);
+}
+
+function formatPhone(el) {
+  let v = el.value.replace(/\D/g, '');
+  if (v.length <= 3) el.value = v;
+  else if (v.length <= 7) el.value = v.slice(0,3) + '-' + v.slice(3);
+  else el.value = v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7,11);
+  savePhone();
+}
+
+function loadPhone() {
+  const saved = getPhone();
+  if (saved) {
+    document.getElementById('phone-input').value = saved;
+    document.getElementById('phone-saved').style.display = 'inline';
+  }
+}
 
 function sendSmsWithLocation() {
   const now = new Date();
@@ -422,7 +459,8 @@ function sendSmsWithLocation() {
   const eq = getEquiv().toFixed(1);
   const mapLink = 'https://www.google.com/maps/search/?api=1&query=' + currentLat + ',' + currentLng;
   const msg = '🚶 나 지금 ' + t + ' 귀가 중이야!\n\n📍 현재 위치:\n' + mapLink + '\n\n🍶 오늘 음주량: 소주 환산 ' + eq + '잔\n2시간 안에 도착할게, 걱정하지 마 😊';
-  const phone = PARTNER_PHONE.replace(/-/g, '');
+  const phone = getPhone().replace(/-/g, '');
+  if (!phone) { alert('배우자 전화번호를 먼저 입력해주세요!'); return; }
   window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
 }
 
@@ -434,7 +472,8 @@ function markArrived() {
   const t = now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분';
   const eq = getEquiv().toFixed(1);
   const msg = '🏠 나 ' + t + '에 집에 안전하게 도착했어!\n오늘 음주량: 소주 환산 ' + eq + '잔\n걱정해줘서 고마워 😊';
-  const phone = PARTNER_PHONE.replace(/-/g, '');
+  const phone = getPhone().replace(/-/g, '');
+  if (!phone) { alert('배우자 전화번호를 먼저 입력해주세요!'); return; }
   setTimeout(() => {
     window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
   }, 300);
@@ -459,6 +498,7 @@ function resetAll() {
 }
 
 render();
+loadPhone();
 </script>
 </body>
 </html>
