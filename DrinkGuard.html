@@ -309,7 +309,7 @@
 
     <!-- 전화번호 입력 -->
     <div id="phone-setup" style="margin-bottom:12px;">
-      <div style="font-size:13px;color:var(--text-sub);margin-bottom:6px;">📱 배우자 전화번호</div>
+      <div style="font-size:13px;color:var(--text-sub);margin-bottom:6px;">📱 상대방 전화번호</div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input id="phone-input" type="tel" placeholder="010-0000-0000"
           style="flex:1;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;"
@@ -460,7 +460,7 @@ function sendSmsWithLocation() {
   const mapLink = 'https://www.google.com/maps/search/?api=1&query=' + currentLat + ',' + currentLng;
   const msg = '🚶 나 지금 ' + t + ' 귀가 중이야!\n\n📍 현재 위치:\n' + mapLink + '\n\n🍶 오늘 음주량: 소주 환산 ' + eq + '잔\n2시간 안에 도착할게, 걱정하지 마 😊';
   const phone = getPhone().replace(/-/g, '');
-  if (!phone) { alert('배우자 전화번호를 먼저 입력해주세요!'); return; }
+  if (!phone) { alert('상대방 전화번호를 먼저 입력해주세요!'); return; }
   window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
 }
 
@@ -473,7 +473,7 @@ function markArrived() {
   const eq = getEquiv().toFixed(1);
   const msg = '🏠 나 ' + t + '에 집에 안전하게 도착했어!\n오늘 음주량: 소주 환산 ' + eq + '잔\n걱정해줘서 고마워 😊';
   const phone = getPhone().replace(/-/g, '');
-  if (!phone) { alert('배우자 전화번호를 먼저 입력해주세요!'); return; }
+  if (!phone) { alert('상대방 전화번호를 먼저 입력해주세요!'); return; }
   setTimeout(() => {
     window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
   }, 300);
